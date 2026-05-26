@@ -2,11 +2,14 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 import time
+import dotenv
+import os
 
+dotenv.load_dotenv()
 pd.set_option('display.max_columns', None)
 
 # 1. Configuration
-API_KEY = "cvmNVUH4Db7ea9Bj2Al5LFaud1qMyXK3Hc0eIDdA"  
+API_KEY = os.getenv('API_KEY')  
 YEARS_BACK = 5
 TOTAL_RECORDS_TO_FETCH = 30000 
 
