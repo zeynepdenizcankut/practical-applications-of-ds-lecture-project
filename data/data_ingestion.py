@@ -4,9 +4,10 @@ data_ingestion.py
 Fetches adverse drug event reports from the openFDA FAERS API
 for GLP-1 receptor agonists (Semaglutide & Tirzepatide).
 
-Uses limit=1000 (max allowed) for fast pagination.
-Optionally uses an API key via the API_KEY environment variable
-to bypass rate limits.
+Works with or without an API key:
+  - With key:    limit=1000, fast pagination
+  - Without key: limit=100,  slower with longer pauses
+ 
 
 Docs: https://open.fda.gov/apis/drug/event/
 """
@@ -31,11 +32,8 @@ GENERICS = ["SEMAGLUTIDE", "TIRZEPATIDE"]
 
 DATE_START = "20200101"
 DATE_END = datetime.now().strftime("%Y%m%d")
-
-PAGE_SIZE = 1000          # Max allowed by openFDA
-TOTAL_TARGET = 30000     
+ 
 MAX_RETRIES = 3
-RETRY_DELAY = 3
 
 
 def build_search_query():
@@ -159,22 +157,34 @@ def run_ingestion(output_path="data/raw_adverse_events.csv"):
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    api_key = os.getenv("API_KEY")
+    api_key = os.getenv("API_KEY") or ""
+    has_key = bool(api_key.strip())
     search_query = build_search_query()
+
+    if has_key:
+        page_size = 1000
+        total_target = 26000
+        delay_between = 0.5
+        rate_limit_wait = 10
+    else:
+        page_size =500
+        total_target = 26000
+        delay_between = 2.0
+        rate_limit_wait = 60
 
     print(f"{'='*60}")
     print(f"openFDA FAERS Ingestion")
-    print(f"  Date range: {DATE_START} → {DATE_END}")
+    print(f"  Date start: {DATE_START}")
     print(f"  API key:    {'provided' if api_key else 'not set (may be rate-limited)'}")
     print(f"{'='*60}")
 
     all_records = []
     start_time = time.time()
 
-    for skip in range(0, TOTAL_TARGET, PAGE_SIZE):
+    for skip in range(0, total_target, page_size):
         params = {
             "search": search_query,
-            "limit": PAGE_SIZE,
+            "limit": page_size,
             "skip": skip,
         }
         if api_key:
@@ -190,19 +200,24 @@ def run_ingestion(output_path="data/raw_adverse_events.csv"):
                     data = resp.json()
                     break
                 elif resp.status_code == 429:
-                    wait = RETRY_DELAY * (attempt + 1)
+                    wait = rate_limit_wait * (attempt + 1)
                     print(f"  Rate limited. Waiting {wait}s...")
                     time.sleep(wait)
                 elif resp.status_code == 404:
                     # No more results beyond this skip
                     data = None
                     break
+                elif resp.status_code == 409:
+                    # openFDA returns 409 when skip exceeds available results
+                    print(f"  Skip={skip} exceeds available results (409).")
+                    data = None
+                    break
                 else:
                     print(f"  HTTP {resp.status_code} – retrying ({attempt+1}/{MAX_RETRIES})")
-                    time.sleep(RETRY_DELAY)
+                    time.sleep(rate_limit_wait)
             except requests.exceptions.RequestException as e:
                 print(f"  Request error: {e} – retrying ({attempt+1}/{MAX_RETRIES})")
-                time.sleep(RETRY_DELAY)
+                time.sleep(rate_limit_wait)
 
         if data is None:
             print(f"  No more results at skip={skip}. Stopping.")
@@ -214,7 +229,7 @@ def run_ingestion(output_path="data/raw_adverse_events.csv"):
             break
 
         # Show total available on first page
-        if skip == 0:
+        if skip == 0 or len(all_records) == 0:
             total_available = data.get("meta", {}).get("results", {}).get("total", 0)
             print(f"  Total available on FDA: {total_available:,}")
 
@@ -225,8 +240,16 @@ def run_ingestion(output_path="data/raw_adverse_events.csv"):
         print(f"  Fetched {len(all_records):,} records  ({elapsed:.0f}s elapsed)")
 
         # Short delay to be respectful (API key holders can go faster)
-        time.sleep(0.5 if api_key else 1.0)
-    print("Api key: ", api_key)
+        time.sleep(delay_between)
+
+    if len(all_records) == 0:
+        print("\nERROR: No records fetched. Possible causes:")
+        print("  - Network issue inside Docker container")
+        print("  - openFDA API is temporarily down")
+        print("  - Rate limit exceeded (try again with an API key)")
+        print("  Get a free key at: https://open.fda.gov/apis/authentication/")
+        raise RuntimeError("Data ingestion failed: no records fetched from openFDA API")
+    
     # --- Deduplicate and save ---
     df = pd.DataFrame(all_records)
     before = len(df)
