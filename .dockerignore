@@ -3,6 +3,5 @@ __pycache__
 .git
 .gitignore
 .env
-*.md
 .venv
 .DS_Store

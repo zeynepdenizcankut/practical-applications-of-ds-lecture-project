@@ -77,7 +77,13 @@ def standardize_age(df):
     Clamp to a plausible human range [0, 120].
     """
     df["patient_age"] = pd.to_numeric(df["patient_age"], errors="coerce")
-    df["patient_age_unit"] = df["patient_age_unit"].astype(str).map(AGE_UNIT_MAP)
+    df["patient_age_unit"] = (
+        pd.to_numeric(df["patient_age_unit"], errors="coerce")
+        .fillna(0)
+        .astype(int)
+        .astype(str)
+        .map(AGE_UNIT_MAP)
+    )
 
     multiplier = df["patient_age_unit"].map(AGE_TO_YEARS).fillna(1.0)
     df["age_years"] = df["patient_age"] * multiplier
@@ -91,14 +97,25 @@ def standardize_age(df):
 
 def map_sex(df):
     """Map sex codes to readable labels."""
-    df["patient_sex"] = df["patient_sex"].astype(str).map(SEX_MAP).fillna("Unknown")
+    df["patient_sex"] = (
+        pd.to_numeric(df["patient_sex"], errors="coerce")
+        .fillna(0)
+        .astype(int)
+        .astype(str)
+        .map(SEX_MAP)
+        .fillna("Unknown")
+    )
     return df
-
 
 def map_report_type(df):
     """Map report type codes."""
     df["report_type"] = (
-        df["report_type"].astype(str).map(REPORT_TYPE_MAP).fillna("Unknown")
+        pd.to_numeric(df["report_type"], errors="coerce")
+        .fillna(0)
+        .astype(int)
+        .astype(str)
+        .map(REPORT_TYPE_MAP)
+        .fillna("Unknown")
     )
     return df
 

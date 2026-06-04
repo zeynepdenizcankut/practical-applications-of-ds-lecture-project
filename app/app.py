@@ -166,7 +166,7 @@ def load_model_artifacts():
 # ─── Sidebar ────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.image("https://img.favpng.com/4/6/23/clip-art-pharmacovigilance-pharmacy-pharmaceutical-industry-health-care-png-favpng-y1wD0Vd9CYBH7M7Xf8aPDGWdz.jpg", width=80)
+    st.image("https://img.favpng.com/4/6/23/clip-art-pharmacovigilance-pharmacy-pharmaceutical-industry-health-care-png-favpng-y1wD0Vd9CYBH7M7Xf8aPDGWdz.jpg", width=120)
     st.markdown("## Pharmacovigilance")
     st.markdown("**GLP-1 Adverse Event Severity Predictor**")
     st.markdown("---")
@@ -435,26 +435,6 @@ elif page == "🤖 Model Performance":
         )
         fig_fi.update_coloraxes(showscale=False)
         st.plotly_chart(fig_fi, use_container_width=True)
-
-    # Prediction distribution
-    st.markdown("### Test Set Predicted Probability Distribution")
-    fig_dist = px.histogram(
-        test_preds,
-        x="y_proba",
-        color=test_preds["y_true"].map({1: "Serious", 0: "Non-Serious"}),
-        nbins=50,
-        barmode="overlay",
-        opacity=0.7,
-        color_discrete_map={"Serious": "#D62828", "Non-Serious": "#0077B6"},
-        labels={"color": "Actual Class"},
-    )
-    fig_dist.update_layout(
-        xaxis_title="Predicted Probability of Serious",
-        yaxis_title="Count",
-        font=dict(size=13),
-        margin=dict(t=30, b=30),
-    )
-    st.plotly_chart(fig_dist, use_container_width=True)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
