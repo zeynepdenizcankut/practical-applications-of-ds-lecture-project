@@ -166,7 +166,7 @@ def load_model_artifacts():
 # ─── Sidebar ────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.image("https://img.favpng.com/4/6/23/clip-art-pharmacovigilance-pharmacy-pharmaceutical-industry-health-care-png-favpng-y1wD0Vd9CYBH7M7Xf8aPDGWdz.jpg", width=120)
+    st.image("https://img.favpng.com/4/6/23/clip-art-pharmacovigilance-pharmacy-pharmaceutical-industry-health-care-png-favpng-y1wD0Vd9CYBH7M7Xf8aPDGWdz.jpg", width=250)
     st.markdown("## Pharmacovigilance")
     st.markdown("**GLP-1 Adverse Event Severity Predictor**")
     st.markdown("---")
