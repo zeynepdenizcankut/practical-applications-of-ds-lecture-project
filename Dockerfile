@@ -2,8 +2,6 @@ FROM python:3.11-slim
 
 # Force Python to flush stdout/stderr immediately (visible logs in Docker)
 ENV PYTHONUNBUFFERED=1
-# It's a free rate-limit key, not a secret credential
-ENV API_KEY = cvmNVUH4Db7ea9Bj2Al5LFaud1qMyXK3Hc0eIDdA
 
 # System packages
 RUN apt-get update && \
